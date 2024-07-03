@@ -37,7 +37,11 @@ func New(cfg *config.Config) (*App, error) {
 
 func (a *App) setupRoutes() {
 	userHandler := handler.NewUserHandler(a.storage, a.logger)
+	authHandler := handler.NewAuthHandler(a.storage, a.logger)
+
 	a.fiber.Post("/user/create", userHandler.CreateRandomUser)
+	a.fiber.Post("/login", authHandler.Login)
+
 	a.logger.Info("Routes set up successfully")
 }
 

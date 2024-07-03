@@ -40,11 +40,29 @@ make down
 make clean
 ```
 
-### API Endpoints
+## API Endpoints
 
-- **POST** /user/create: Creates a random user profile
+- **POST** `/user/create`: Creates a random user profile
+- **POST** `/login`: Authenticates a user and returns a JWT token
 
-### Environment Variables
+### Login Endpoint
+
+To use the login endpoint, send a POST request to `/login` with the following JSON body:
+
+```json
+{
+  "email": "user@example.com",
+  "password": "us3rP4ss0rd"
+}
+```
+
+Example
+
+```
+curl -X POST -H "Content-Type: application/json" -d '{"email":"user@example.com","password":"us3rP4ss0rd"}' http://localhost:3000/login
+```
+
+## Environment Variables
 
 The application uses the following environment variables:
 

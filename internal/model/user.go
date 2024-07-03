@@ -32,6 +32,9 @@ func GenerateRandomUser() User {
 		Age:      age[0],
 	}
 }
+func (u *User) CheckPassword(password string) bool {
+	return u.Password == password
+}
 
 func randomGender() string {
 	genders := []string{"Male", "Female"}

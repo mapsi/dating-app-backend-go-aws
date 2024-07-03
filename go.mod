@@ -5,6 +5,7 @@ go 1.22.1
 require (
 	github.com/aws/aws-sdk-go-v2 v1.30.1
 	github.com/aws/aws-sdk-go-v2/config v1.27.23
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.23
 	github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue v1.14.7
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.34.1
 	github.com/go-faker/faker/v4 v4.4.2
@@ -13,7 +14,6 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.0.5 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.23 // indirect
 	github.com/google/uuid v1.5.0 // indirect
 	github.com/klauspost/compress v1.17.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
@@ -23,7 +23,7 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.51.0 // indirect
 	github.com/valyala/tcplisten v1.0.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	golang.org/x/sys v0.21.0 // indirect
 )
 
 require (
@@ -40,6 +40,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.30.1 // indirect
 	github.com/aws/smithy-go v1.20.3 // indirect
 	github.com/gofiber/fiber/v2 v2.52.5
+	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	golang.org/x/text v0.16.0 // indirect
 )
