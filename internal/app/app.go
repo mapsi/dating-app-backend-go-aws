@@ -4,6 +4,7 @@ import (
 	"dating-app-backend/internal/config"
 	"dating-app-backend/internal/handler"
 	"dating-app-backend/internal/logger"
+	"dating-app-backend/internal/middleware"
 	"dating-app-backend/internal/storage"
 
 	"github.com/gofiber/fiber/v2"
@@ -41,6 +42,7 @@ func (a *App) setupRoutes() {
 
 	a.fiber.Post("/user/create", userHandler.CreateRandomUser)
 	a.fiber.Post("/login", authHandler.Login)
+	a.fiber.Get("/discover", middleware.Protected(), userHandler.Discover)
 
 	a.logger.Info("Routes set up successfully")
 }

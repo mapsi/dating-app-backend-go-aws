@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
@@ -156,4 +157,39 @@ func (db *DynamoDB) GetUserByEmail(ctx context.Context, email string) (*appModel
 	}
 
 	return &user, nil
+}
+
+func (db *DynamoDB) GetOtherUsers(ctx context.Context, userId string) ([]appModel.User, error) {
+	// Query DynamoDB to get all users except the current user
+	expr, err := expression.NewBuilder().WithFilter(expression.NotEqual(expression.Name("ID"), expression.Value(userId))).Build()
+	if err != nil {
+		db.logger.Error("Failed to build expression", "error", err)
+		return nil, err
+	}
+
+	input := &dynamodb.ScanInput{
+		TableName:                 aws.String(tableName),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+		FilterExpression:          expr.Filter(),
+	}
+
+	result, err := db.client.Scan(ctx, input)
+	if err != nil {
+		db.logger.Error("Failed to scan users", "error", err)
+		return nil, err
+	}
+
+	// Unmarshal the results
+	var users []appModel.User
+	err = attributevalue.UnmarshalListOfMaps(result.Items, &users)
+	if err != nil {
+		db.logger.Error("Failed to unmarshal users", "error", err)
+		return nil, err
+	}
+
+	// TODO: Filter out users that have already been swiped
+
+	return users, nil
+
 }
