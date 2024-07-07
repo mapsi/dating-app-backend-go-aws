@@ -39,6 +39,7 @@ func (a *App) setupRoutes() {
 	userHandler := handler.NewUserHandler(a.storage, a.logger)
 	authHandler := handler.NewAuthHandler(a.storage, a.logger)
 	discoverHandler := handler.NewDiscoverHandler(a.storage, a.logger)
+	swipeHandler := handler.NewSwipeHandler(a.storage, a.logger)
 
 	authMiddleware := middleware.NewAuthMiddleware(a.config)
 
@@ -47,6 +48,7 @@ func (a *App) setupRoutes() {
 
 	// Protected routes
 	a.fiber.Get("/discover", authMiddleware, discoverHandler.DiscoverUsers)
+	a.fiber.Post("/swipe", authMiddleware, swipeHandler.RecordSwipe)
 
 	a.logger.Info("Routes set up successfully")
 }

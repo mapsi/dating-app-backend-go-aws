@@ -77,13 +77,13 @@ Response format:
 {
   "results": [
     {
-      "id": 1234,
+      "id": "01F8Z6ARNVT4VQ3HTBD7BTHVF9",
       "name": "John Doe",
       "gender": "male",
       "age": 30
     },
     {
-      "id": 5678,
+      "id": "01F8Z6ARNVT4VQ3HTBD7BTHVG9",
       "name": "Jane Smith",
       "gender": "female",
       "age": 28
@@ -91,6 +91,45 @@ Response format:
     ...
   ]
 }
+```
+
+### Swipe Endpoint
+
+To use the swipe endpoint, send an authenticated POST request to `/swipe` with the following JSON body:
+
+```
+{
+   "swipedId": "user_id_of_the_swiped_profile",
+   "preference": "YES" or "NO"
+}
+```
+
+The server will respond with a result indicating whether there was a match:
+
+```json
+{
+  "result": {
+    "matched": true,
+    "matchID": "01F8Z6ARNVT4VQ3HTBD7BTHVF9"
+  }
+}
+```
+
+Note:
+
+- "NO" represents a dislike, while "YES" represents a like.
+- The matchID filed is only include if `matched` is true.
+
+Example:
+
+```
+curl -X POST http://localhost:3000/swipe \
+     -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." \
+     -H "Content-Type: application/json" \
+     -d '{
+           "swipedId": "01F8Z6ARNVT4VQ3HTBD7BTHVF9",
+           "preference": "YES"
+         }'
 ```
 
 ## Environment Variables
