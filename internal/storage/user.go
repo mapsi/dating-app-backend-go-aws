@@ -7,7 +7,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
-	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/expression"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
 )
@@ -64,24 +63,20 @@ func (db *DynamoDB) GetUserByEmail(ctx context.Context, email string) (*appModel
 	return &user, nil
 }
 
-func (db *DynamoDB) GetOtherUsers(ctx context.Context, userId string) ([]appModel.User, error) {
+func (db *DynamoDB) DiscoverUsers(ctx context.Context, currentUserID string, limit int32) ([]appModel.UserPublicData, error) {
 	// Query DynamoDB to get all users except the current user
-	expr, err := expression.NewBuilder().WithFilter(expression.NotEqual(expression.Name("ID"), expression.Value(userId))).Build()
-	if err != nil {
-		db.logger.Error("Failed to build expression", "error", err)
-		return nil, err
-	}
-
 	input := &dynamodb.ScanInput{
-		TableName:                 aws.String(usersTableName),
-		ExpressionAttributeNames:  expr.Names(),
-		ExpressionAttributeValues: expr.Values(),
-		FilterExpression:          expr.Filter(),
+		TableName:        aws.String(usersTableName),
+		FilterExpression: aws.String("ID <> :userId"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":userId": &types.AttributeValueMemberS{Value: currentUserID},
+		},
+		Limit: aws.Int32(limit),
 	}
 
 	result, err := db.client.Scan(ctx, input)
 	if err != nil {
-		db.logger.Error("Failed to scan users", "error", err)
+		db.logger.Error("Failed to scan users for discovery", "error", err, "currentUserID", currentUserID)
 		return nil, err
 	}
 
@@ -89,12 +84,17 @@ func (db *DynamoDB) GetOtherUsers(ctx context.Context, userId string) ([]appMode
 	var users []appModel.User
 	err = attributevalue.UnmarshalListOfMaps(result.Items, &users)
 	if err != nil {
-		db.logger.Error("Failed to unmarshal users", "error", err)
+		db.logger.Error("Failed to unmarshal discovered users", "error", err, "currentUserID", currentUserID)
 		return nil, err
+	}
+
+	publicUsers := make([]appModel.UserPublicData, len(users))
+	for i, user := range users {
+		publicUsers[i] = user.PublicData()
 	}
 
 	// TODO: Filter out users that have already been swiped
 
-	return users, nil
-
+	db.logger.Info("Users discovered successfully", "currentUserID", currentUserID, "count", len(users))
+	return publicUsers, nil
 }

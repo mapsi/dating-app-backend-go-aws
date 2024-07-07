@@ -38,10 +38,15 @@ func New(cfg *config.Config, logger *logger.Logger) (*App, error) {
 func (a *App) setupRoutes() {
 	userHandler := handler.NewUserHandler(a.storage, a.logger)
 	authHandler := handler.NewAuthHandler(a.storage, a.logger)
+	discoverHandler := handler.NewDiscoverHandler(a.storage, a.logger)
+
+	authMiddleware := middleware.NewAuthMiddleware(a.config)
 
 	a.fiber.Post("/user/create", userHandler.CreateRandomUser)
 	a.fiber.Post("/login", authHandler.Login)
-	a.fiber.Get("/discover", middleware.Protected(), userHandler.Discover)
+
+	// Protected routes
+	a.fiber.Get("/discover", authMiddleware, discoverHandler.DiscoverUsers)
 
 	a.logger.Info("Routes set up successfully")
 }

@@ -9,12 +9,28 @@ import (
 )
 
 type User struct {
-	ID       string `json:"id"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
-	Name     string `json:"name"`
-	Gender   string `json:"gender"`
-	Age      int    `json:"age"`
+	ID       string `json:"id" dynamodbav:"ID"`
+	Email    string `json:"email" dynamodbav:"Email"`
+	Password string `json:"-" dynamodbav:"Password"`
+	Name     string `json:"name" dynamodbav:"Name"`
+	Gender   string `json:"gender" dynamodbav:"Gender"`
+	Age      int    `json:"age" dynamodbav:"Age"`
+}
+
+type UserPublicData struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Gender string `json:"gender"`
+	Age    int    `json:"age"`
+}
+
+func (u *User) PublicData() UserPublicData {
+	return UserPublicData{
+		ID:     u.ID,
+		Name:   u.Name,
+		Gender: u.Gender,
+		Age:    u.Age,
+	}
 }
 
 func GenerateRandomUser() User {

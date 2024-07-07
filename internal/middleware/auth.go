@@ -7,7 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 )
 
-func Protected(cfg *config.Config) fiber.Handler {
+func NewAuthMiddleware(cfg *config.Config) fiber.Handler {
 	return jwtware.New(jwtware.Config{
 		SigningKey:   jwtware.SigningKey{Key: []byte(cfg.JwtSecret)},
 		ErrorHandler: jwtError,

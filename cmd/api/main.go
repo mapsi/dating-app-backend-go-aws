@@ -27,6 +27,7 @@ func main() {
 	// Initialise the JWT secret
 	auth.InitJWTSecret(cfg.JwtSecret)
 
+	log.Info("Starting application", "port", cfg.Port)
 	if err := app.Run(); err != nil {
 		log.Error("Failed to run app: %v", err)
 		os.Exit(1)
