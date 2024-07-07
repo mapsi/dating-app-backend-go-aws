@@ -1,7 +1,8 @@
 package model
 
 import (
-	"math/rand/v2"
+	"math/rand"
+	"time"
 
 	"github.com/go-faker/faker/v4"
 	"github.com/oklog/ulid/v2"
@@ -17,19 +18,17 @@ type User struct {
 }
 
 func GenerateRandomUser() User {
-
-	age, _ := faker.RandomInt(18, 100)
+	entropy := ulid.Monotonic(rand.New(rand.NewSource(time.Now().UnixNano())), 0)
+	id := ulid.MustNew(ulid.Timestamp(time.Now()), entropy).String()
 
 	return User{
-		// Generate a ULID for the ID
-		// https://github.com/oklog/ulid "Care should be taken when providing a source of entropy."
-		ID:    ulid.MustNew(ulid.Now(), nil).String(),
+		ID:    id,
 		Email: faker.Email(),
 		// TODO: Use a more secure password hashing algorithm
 		Password: faker.Password(),
 		Name:     faker.Name(),
 		Gender:   randomGender(),
-		Age:      age[0],
+		Age:      rand.Intn(82) + 18,
 	}
 }
 func (u *User) CheckPassword(password string) bool {
@@ -39,5 +38,5 @@ func (u *User) CheckPassword(password string) bool {
 func randomGender() string {
 	genders := []string{"Male", "Female"}
 
-	return genders[rand.IntN(len(genders))]
+	return genders[rand.Intn(len(genders))]
 }
