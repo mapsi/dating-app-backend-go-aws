@@ -17,8 +17,7 @@ type App struct {
 	logger  *logger.Logger
 }
 
-func New(cfg *config.Config) (*App, error) {
-	logger := logger.NewLogger()
+func New(cfg *config.Config, logger *logger.Logger) (*App, error) {
 	db, err := storage.NewDynamoDB(cfg, logger)
 	if err != nil {
 		return nil, err

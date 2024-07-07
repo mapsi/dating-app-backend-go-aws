@@ -17,7 +17,7 @@ func main() {
 
 	log.Info("Config loaded successfully", "config", cfg)
 
-	app, err := app.New(cfg)
+	app, err := app.New(cfg, log)
 	if err != nil {
 		log.Error("Failed to create app", "error", err)
 		os.Exit(1)
