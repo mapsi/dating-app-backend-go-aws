@@ -2,6 +2,7 @@ package main
 
 import (
 	"dating-app-backend/internal/app"
+	"dating-app-backend/internal/auth"
 	"dating-app-backend/internal/config"
 	"dating-app-backend/internal/logger"
 	"os"
@@ -22,6 +23,9 @@ func main() {
 		log.Error("Failed to create app", "error", err)
 		os.Exit(1)
 	}
+
+	// Initialise the JWT secret
+	auth.InitJWTSecret(cfg.JwtSecret)
 
 	if err := app.Run(); err != nil {
 		log.Error("Failed to run app: %v", err)

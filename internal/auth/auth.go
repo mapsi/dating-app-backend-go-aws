@@ -6,15 +6,22 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-// TODO: Set this to something more secure using an environment variable or something similar
-var jwtKey = []byte("super_secret_key")
+var jwtKey []byte
 
 type Claims struct {
 	UserID string `json:"user_id"`
 	jwt.RegisteredClaims
 }
 
+func InitJWTSecret(secret string) {
+	jwtKey = []byte(secret)
+}
+
 func GenerateToken(userID string) (string, error) {
+	if len(jwtKey) == 0 {
+		return "", errors.New("JWT secret not initialized")
+	}
+
 	expirationTime := time.Now().Add(24 * time.Hour)
 	claims := &Claims{
 		UserID: userID,
