@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"sort"
 	"strconv"
 
 	appModel "dating-app-backend/internal/model"
@@ -12,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
 	"github.com/aws/aws-sdk-go-v2/service/dynamodb/types"
+	"github.com/jftuga/geodist"
 )
 
 const usersTableName = "UsersTable"
@@ -66,20 +68,20 @@ func (db *DynamoDB) GetUserByEmail(ctx context.Context, email string) (*appModel
 	return &user, nil
 }
 
-func (db *DynamoDB) DiscoverUsers(ctx context.Context, currentUserID string, limit int32, minAge, maxAge int, gender string) ([]appModel.UserPublicData, error) {
-	db.logger.Info("Discovering users", "currentUserID", currentUserID, "limit", limit, "minAge", minAge, "maxAge", maxAge, "gender", gender)
+func (db *DynamoDB) DiscoverUsers(ctx context.Context, currentUser appModel.User, limit int32, minAge, maxAge int, gender string) ([]appModel.UserPublicData, error) {
+	db.logger.Info("Discovering users", "currentUserID", currentUser.ID, "limit", limit, "minAge", minAge, "maxAge", maxAge, "gender", gender)
 
 	// Get all swipes by the current user
-	swipedUsers, err := db.getSwipedUsers(ctx, currentUserID)
+	swipedUsers, err := db.getSwipedUsers(ctx, currentUser.ID)
 	if err != nil {
-		db.logger.Error("Failed to get swiped users", "error", err, "currentUserID", currentUserID)
+		db.logger.Error("Failed to get swiped users", "error", err, "currentUserID", currentUser.ID)
 		return nil, err
 	}
 
 	// Prepare the filter expression
 	filterExp := "ID <> :currentUserId"
 	expAttrValues := map[string]types.AttributeValue{
-		":currentUserId": &types.AttributeValueMemberS{Value: currentUserID},
+		":currentUserId": &types.AttributeValueMemberS{Value: currentUser.ID},
 	}
 
 	// Add swiped users to the filter expression
@@ -111,23 +113,32 @@ func (db *DynamoDB) DiscoverUsers(ctx context.Context, currentUserID string, lim
 		Limit:                     aws.Int32(limit),
 	})
 	if err != nil {
-		db.logger.Error("Failed to scan users for discovery", "error", err, "currentUserID", currentUserID)
+		db.logger.Error("Failed to scan users for discovery", "error", err, "currentUserID", currentUser.ID)
 		return nil, err
 	}
 
 	var users []appModel.User
 	err = attributevalue.UnmarshalListOfMaps(result.Items, &users)
 	if err != nil {
-		db.logger.Error("Failed to unmarshal discovered users", "error", err, "currentUserID", currentUserID)
+		db.logger.Error("Failed to unmarshal discovered users", "error", err, "currentUserID", currentUser.ID)
 		return nil, err
 	}
 
 	publicUsers := make([]appModel.UserPublicData, len(users))
 	for i, user := range users {
-		publicUsers[i] = user.PublicData()
+		publicData := user.PublicData()
+		distance, _ := geodist.HaversineDistance(geodist.Coord{Lat: currentUser.Latitude, Lon: currentUser.Longitude},
+			geodist.Coord{Lat: user.Latitude, Lon: user.Longitude})
+		publicData.DistanceFromMe = distance
+		publicUsers[i] = publicData
 	}
 
-	db.logger.Info("Users discovered successfully", "currentUserID", currentUserID, "count", len(publicUsers))
+	// Sort users by distance
+	sort.Slice(publicUsers, func(i, j int) bool {
+		return publicUsers[i].DistanceFromMe < publicUsers[j].DistanceFromMe
+	})
+
+	db.logger.Info("Users discovered successfully", "currentUserID", currentUser.ID, "count", len(publicUsers))
 	return publicUsers, nil
 }
 
@@ -158,4 +169,34 @@ func (db *DynamoDB) getSwipedUsers(ctx context.Context, swiperId string) ([]stri
 	}
 
 	return swipedIds, nil
+}
+
+func (db *DynamoDB) GetUserByID(ctx context.Context, userID string) (*appModel.User, error) {
+	db.logger.Info("Getting user by ID", "userID", userID)
+
+	result, err := db.client.GetItem(ctx, &dynamodb.GetItemInput{
+		TableName: aws.String(usersTableName),
+		Key: map[string]types.AttributeValue{
+			"ID": &types.AttributeValueMemberS{Value: userID},
+		},
+	})
+	if err != nil {
+		db.logger.Error("Failed to get user from DynamoDB", "error", err, "userID", userID)
+		return nil, err
+	}
+
+	if result.Item == nil {
+		db.logger.Warn("User not found", "userID", userID)
+		return nil, fmt.Errorf("user not found")
+	}
+
+	var user appModel.User
+	err = attributevalue.UnmarshalMap(result.Item, &user)
+	if err != nil {
+		db.logger.Error("Failed to unmarshal user data", "error", err, "userID", userID)
+		return nil, err
+	}
+
+	db.logger.Info("User retrieved successfully", "userID", userID)
+	return &user, nil
 }

@@ -11,6 +11,7 @@ require (
 	github.com/go-faker/faker/v4 v4.4.2
 	github.com/gofiber/contrib/jwt v1.0.10
 	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/jftuga/geodist v1.0.0
 	github.com/oklog/ulid/v2 v2.1.0
 )
 

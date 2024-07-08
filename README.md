@@ -86,13 +86,19 @@ Response format:
       "id": "01F8Z6ARNVT4VQ3HTBD7BTHVF9",
       "name": "John Doe",
       "gender": "Male",
-      "age": 30
+      "age": 30,
+      "latitude": 40.7128,
+      "longitude": -74.0060,
+      "distanceFromMe": 5.2
     },
     {
       "id": "01F8Z6ARNVT4VQ3HTBD7BTHVG9",
       "name": "Jane Smith",
       "gender": "Female",
-      "age": 28
+      "age": 28,
+      "latitude": 34.0522,
+      "longitude": -118.2437,
+      "distanceFromMe": 15.7
     },
     ...
   ]
@@ -162,4 +168,5 @@ To authenticate a request, include the JWT token in the Authorization header lik
 The following routes are protected and require authentication:
 
 - **GET** `/discover`: Fetches profiles of potential matches
+- **POST** `/swipe`: Records swipes of profiles
 

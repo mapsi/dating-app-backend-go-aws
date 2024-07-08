@@ -9,27 +9,34 @@ import (
 )
 
 type User struct {
-	ID       string `json:"id" dynamodbav:"ID"`
-	Email    string `json:"email" dynamodbav:"Email"`
-	Password string `json:"-" dynamodbav:"Password"`
-	Name     string `json:"name" dynamodbav:"Name"`
-	Gender   string `json:"gender" dynamodbav:"Gender"`
-	Age      int    `json:"age" dynamodbav:"Age"`
+	ID        string  `json:"id" dynamodbav:"ID"`
+	Email     string  `json:"email" dynamodbav:"Email"`
+	Password  string  `json:"-" dynamodbav:"Password"`
+	Name      string  `json:"name" dynamodbav:"Name"`
+	Gender    string  `json:"gender" dynamodbav:"Gender"`
+	Age       int     `json:"age" dynamodbav:"Age"`
+	Latitude  float64 `json:"latitude" dynamodbav:"Latitude"`
+	Longitude float64 `json:"longitude" dynamodbav:"Longitude"`
 }
 
 type UserPublicData struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Gender string `json:"gender"`
-	Age    int    `json:"age"`
+	ID             string  `json:"id"`
+	Name           string  `json:"name"`
+	Gender         string  `json:"gender"`
+	Age            int     `json:"age"`
+	Latitude       float64 `json:"latitude"`
+	Longitude      float64 `json:"longitude"`
+	DistanceFromMe float64 `json:"distanceFromMe"`
 }
 
 func (u *User) PublicData() UserPublicData {
 	return UserPublicData{
-		ID:     u.ID,
-		Name:   u.Name,
-		Gender: u.Gender,
-		Age:    u.Age,
+		ID:        u.ID,
+		Name:      u.Name,
+		Gender:    u.Gender,
+		Age:       u.Age,
+		Latitude:  u.Latitude,
+		Longitude: u.Longitude,
 	}
 }
 
@@ -41,12 +48,23 @@ func GenerateRandomUser() User {
 		ID:    id,
 		Email: faker.Email(),
 		// TODO: Use a more secure password hashing algorithm
-		Password: faker.Password(),
-		Name:     faker.Name(),
-		Gender:   randomGender(),
-		Age:      rand.Intn(82) + 18,
+		Password:  faker.Password(),
+		Name:      faker.Name(),
+		Gender:    randomGender(),
+		Age:       rand.Intn(62) + 18,
+		Latitude:  randomLatitude(),
+		Longitude: randomLongitude(),
 	}
 }
+
+func randomLatitude() float64 {
+	return rand.Float64()*180 - 90
+}
+
+func randomLongitude() float64 {
+	return rand.Float64()*360 - 180
+}
+
 func (u *User) CheckPassword(password string) bool {
 	return u.Password == password
 }
