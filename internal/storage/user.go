@@ -2,6 +2,8 @@ package storage
 
 import (
 	"context"
+	"fmt"
+
 	appModel "dating-app-backend/internal/model"
 	"errors"
 
@@ -64,23 +66,39 @@ func (db *DynamoDB) GetUserByEmail(ctx context.Context, email string) (*appModel
 }
 
 func (db *DynamoDB) DiscoverUsers(ctx context.Context, currentUserID string, limit int32) ([]appModel.UserPublicData, error) {
-	// Query DynamoDB to get all users except the current user
-	input := &dynamodb.ScanInput{
-		TableName:        aws.String(usersTableName),
-		FilterExpression: aws.String("ID <> :userId"),
-		ExpressionAttributeValues: map[string]types.AttributeValue{
-			":userId": &types.AttributeValueMemberS{Value: currentUserID},
-		},
-		Limit: aws.Int32(limit),
+	db.logger.Info("Discovering users", "currentUserID", currentUserID, "limit", limit)
+
+	// Get all swipes by the current user
+	swipedUsers, err := db.getSwipedUsers(ctx, currentUserID)
+	if err != nil {
+		db.logger.Error("Failed to get swiped users", "error", err, "currentUserID", currentUserID)
+		return nil, err
 	}
 
-	result, err := db.client.Scan(ctx, input)
+	// Prepare the filter expression
+	filterExp := "ID <> :currentUserId"
+	expAttrValues := map[string]types.AttributeValue{
+		":currentUserId": &types.AttributeValueMemberS{Value: currentUserID},
+	}
+
+	// Add swiped users to the filter expression
+	for i, swipedID := range swipedUsers {
+		filterExp += fmt.Sprintf(" AND ID <> :swipedId%d", i)
+		expAttrValues[fmt.Sprintf(":swipedId%d", i)] = &types.AttributeValueMemberS{Value: swipedID}
+	}
+
+	// Perform the scan operation
+	result, err := db.client.Scan(ctx, &dynamodb.ScanInput{
+		TableName:                 aws.String(usersTableName),
+		FilterExpression:          aws.String(filterExp),
+		ExpressionAttributeValues: expAttrValues,
+		Limit:                     aws.Int32(limit),
+	})
 	if err != nil {
 		db.logger.Error("Failed to scan users for discovery", "error", err, "currentUserID", currentUserID)
 		return nil, err
 	}
 
-	// Unmarshal the results
 	var users []appModel.User
 	err = attributevalue.UnmarshalListOfMaps(result.Items, &users)
 	if err != nil {
@@ -93,8 +111,35 @@ func (db *DynamoDB) DiscoverUsers(ctx context.Context, currentUserID string, lim
 		publicUsers[i] = user.PublicData()
 	}
 
-	// TODO: Filter out users that have already been swiped
-
-	db.logger.Info("Users discovered successfully", "currentUserID", currentUserID, "count", len(users))
+	db.logger.Info("Users discovered successfully", "currentUserID", currentUserID, "count", len(publicUsers))
 	return publicUsers, nil
+}
+
+func (db *DynamoDB) getSwipedUsers(ctx context.Context, swiperId string) ([]string, error) {
+	result, err := db.client.Query(ctx, &dynamodb.QueryInput{
+		TableName:              aws.String(swipesTableName),
+		KeyConditionExpression: aws.String("SwiperId = :swiperId"),
+		ExpressionAttributeValues: map[string]types.AttributeValue{
+			":swiperId": &types.AttributeValueMemberS{Value: swiperId},
+		},
+		ProjectionExpression: aws.String("SwipedId"),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	var swipes []struct {
+		SwipedId string `dynamodbav:"SwipedId"`
+	}
+	err = attributevalue.UnmarshalListOfMaps(result.Items, &swipes)
+	if err != nil {
+		return nil, err
+	}
+
+	swipedIds := make([]string, len(swipes))
+	for i, swipe := range swipes {
+		swipedIds[i] = swipe.SwipedId
+	}
+
+	return swipedIds, nil
 }
