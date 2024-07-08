@@ -15,6 +15,27 @@ const swipesTableName = "SwipesTable"
 func (db *DynamoDB) RecordSwipe(ctx context.Context, swipe model.Swipe) (bool, string, error) {
 	db.logger.Info("Recording swipe", "swiperId", swipe.SwiperId, "swipedId", swipe.SwipedId, "preference", swipe.Preference)
 
+	// Update swipe statistics for the swiped user
+	swipedUser, err := db.GetUserByID(ctx, swipe.SwipedId)
+	if err != nil {
+		db.logger.Error("Failed to get swiped user", "error", err, "swipedId", swipe.SwipedId)
+		return false, "", err
+	}
+
+	swipedUser.TotalSwipes++
+	if swipe.Preference == model.SwipeYes {
+		swipedUser.YesSwipes++
+	}
+	swipedUser.UpdateAttractivenessScore()
+
+	// TODO: maybe do this using the listener on the DynamoDB stream
+	// Update the swiped user in the database
+	err = db.UpdateUser(ctx, swipedUser)
+	if err != nil {
+		db.logger.Error("Failed to update swiped user", "error", err, "swipedId", swipe.SwipedId)
+		return false, "", err
+	}
+
 	item, err := attributevalue.MarshalMap(swipe)
 	if err != nil {
 		db.logger.Error("Failed to marshal swipe", "error", err)

@@ -9,34 +9,47 @@ import (
 )
 
 type User struct {
-	ID        string  `json:"id" dynamodbav:"ID"`
-	Email     string  `json:"email" dynamodbav:"Email"`
-	Password  string  `json:"-" dynamodbav:"Password"`
-	Name      string  `json:"name" dynamodbav:"Name"`
-	Gender    string  `json:"gender" dynamodbav:"Gender"`
-	Age       int     `json:"age" dynamodbav:"Age"`
-	Latitude  float64 `json:"latitude" dynamodbav:"Latitude"`
-	Longitude float64 `json:"longitude" dynamodbav:"Longitude"`
+	ID                  string  `json:"id" dynamodbav:"ID"`
+	Email               string  `json:"email" dynamodbav:"Email"`
+	Password            string  `json:"-" dynamodbav:"Password"`
+	Name                string  `json:"name" dynamodbav:"Name"`
+	Gender              string  `json:"gender" dynamodbav:"Gender"`
+	Age                 int     `json:"age" dynamodbav:"Age"`
+	Latitude            float64 `json:"latitude" dynamodbav:"Latitude"`
+	Longitude           float64 `json:"longitude" dynamodbav:"Longitude"`
+	YesSwipes           int     `json:"yesSwipes" dynamodbav:"YesSwipes"`
+	TotalSwipes         int     `json:"totalSwipes" dynamodbav:"TotalSwipes"`
+	AttractivenessScore float64 `json:"attractivenessScore" dynamodbav:"AttractivenessScore"`
 }
 
 type UserPublicData struct {
-	ID             string  `json:"id"`
-	Name           string  `json:"name"`
-	Gender         string  `json:"gender"`
-	Age            int     `json:"age"`
-	Latitude       float64 `json:"latitude"`
-	Longitude      float64 `json:"longitude"`
-	DistanceFromMe float64 `json:"distanceFromMe"`
+	ID                  string  `json:"id"`
+	Name                string  `json:"name"`
+	Gender              string  `json:"gender"`
+	Age                 int     `json:"age"`
+	Latitude            float64 `json:"latitude"`
+	Longitude           float64 `json:"longitude"`
+	DistanceFromMe      float64 `json:"distanceFromMe"`
+	AttractivenessScore float64 `json:"attractivenessScore"`
 }
 
 func (u *User) PublicData() UserPublicData {
 	return UserPublicData{
-		ID:        u.ID,
-		Name:      u.Name,
-		Gender:    u.Gender,
-		Age:       u.Age,
-		Latitude:  u.Latitude,
-		Longitude: u.Longitude,
+		ID:                  u.ID,
+		Name:                u.Name,
+		Gender:              u.Gender,
+		Age:                 u.Age,
+		Latitude:            u.Latitude,
+		Longitude:           u.Longitude,
+		AttractivenessScore: u.AttractivenessScore,
+	}
+}
+
+func (u *User) UpdateAttractivenessScore() {
+	if u.TotalSwipes > 0 {
+		u.AttractivenessScore = float64(u.YesSwipes) / float64(u.TotalSwipes)
+	} else {
+		u.AttractivenessScore = 0.5 // Default score for new users
 	}
 }
 

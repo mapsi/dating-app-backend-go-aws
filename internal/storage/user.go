@@ -68,7 +68,7 @@ func (db *DynamoDB) GetUserByEmail(ctx context.Context, email string) (*appModel
 	return &user, nil
 }
 
-func (db *DynamoDB) DiscoverUsers(ctx context.Context, currentUser appModel.User, limit int32, minAge, maxAge int, gender string) ([]appModel.UserPublicData, error) {
+func (db *DynamoDB) DiscoverUsers(ctx context.Context, currentUser appModel.User, limit int32, minAge, maxAge int, gender string, sortBy string) ([]appModel.UserPublicData, error) {
 	db.logger.Info("Discovering users", "currentUserID", currentUser.ID, "limit", limit, "minAge", minAge, "maxAge", maxAge, "gender", gender)
 
 	// Get all swipes by the current user
@@ -133,10 +133,23 @@ func (db *DynamoDB) DiscoverUsers(ctx context.Context, currentUser appModel.User
 		publicUsers[i] = publicData
 	}
 
-	// Sort users by distance
-	sort.Slice(publicUsers, func(i, j int) bool {
-		return publicUsers[i].DistanceFromMe < publicUsers[j].DistanceFromMe
-	})
+	// TODO: break out and write a test for this ⤵️
+	switch sortBy {
+	case "distance":
+		sort.Slice(publicUsers, func(i, j int) bool {
+			return publicUsers[i].DistanceFromMe < publicUsers[j].DistanceFromMe
+		})
+	case "attractiveness":
+		sort.Slice(publicUsers, func(i, j int) bool {
+			return publicUsers[i].AttractivenessScore > publicUsers[j].AttractivenessScore
+		})
+	default: // Combined sorting
+		sort.Slice(publicUsers, func(i, j int) bool {
+			scoreI := publicUsers[i].AttractivenessScore / (publicUsers[i].DistanceFromMe + 1)
+			scoreJ := publicUsers[j].AttractivenessScore / (publicUsers[j].DistanceFromMe + 1)
+			return scoreI > scoreJ
+		})
+	}
 
 	db.logger.Info("Users discovered successfully", "currentUserID", currentUser.ID, "count", len(publicUsers))
 	return publicUsers, nil
@@ -199,4 +212,23 @@ func (db *DynamoDB) GetUserByID(ctx context.Context, userID string) (*appModel.U
 
 	db.logger.Info("User retrieved successfully", "userID", userID)
 	return &user, nil
+}
+
+func (db *DynamoDB) UpdateUser(ctx context.Context, user *appModel.User) error {
+	item, err := attributevalue.MarshalMap(user)
+	if err != nil {
+		db.logger.Error("Failed to marshal user", "error", err, "userId", user.ID)
+		return err
+	}
+
+	_, err = db.client.PutItem(ctx, &dynamodb.PutItemInput{
+		TableName: aws.String(usersTableName),
+		Item:      item,
+	})
+	if err != nil {
+		db.logger.Error("Failed to update user in DynamoDB", "error", err, "userId", user.ID)
+		return err
+	}
+
+	return nil
 }

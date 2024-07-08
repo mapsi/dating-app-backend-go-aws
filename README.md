@@ -70,6 +70,7 @@ You can include the following query parameters to filter the results:
 - `minAge`: Minimum age of users to discover (inclusive)
 - `maxAge`: Maximum age of users to discover (inclusive)
 - `gender`: Gender of users to discover ("Male" or "Female")
+- `sortBy`: Sorting method ("distance", "attractiveness", or "combined")
 
 Example:
 
@@ -89,7 +90,8 @@ Response format:
       "age": 30,
       "latitude": 40.7128,
       "longitude": -74.0060,
-      "distanceFromMe": 5.2
+      "distanceFromMe": 5.2,
+      "attractivenessScore": 0.85
     },
     {
       "id": "01F8Z6ARNVT4VQ3HTBD7BTHVG9",
@@ -98,7 +100,8 @@ Response format:
       "age": 28,
       "latitude": 34.0522,
       "longitude": -118.2437,
-      "distanceFromMe": 15.7
+      "distanceFromMe": 15.7,
+      "attractivenessScore": 0.78
     },
     ...
   ]
@@ -169,4 +172,18 @@ The following routes are protected and require authentication:
 
 - **GET** `/discover`: Fetches profiles of potential matches
 - **POST** `/swipe`: Records swipes of profiles
+
+## Thoughts, possible roadmap
+
+### Datastores 
+We're currently only using DynamoDB for all operations.
+In the future ElasticSearch/OpenSearch can be used for filtering based on preferences, distance, attractiveness.
+ElasticSearch has built in geospatial features so it'd be more efficient that making these on the dynamodb + app side.
+
+Redis or SQS can be used to batch swipe writes to DDB.
+
+### Events
+Currently the system is coupled and fully synchronous. EDA can be implemented to decouple the components.
+Eg. when a user receives a like, then a listener on the ddb stream updates the attractiveness on the profile. Via the same event another handler can check if there's been a match and emit for another handler to pickup and via websockets notify both users that they've been matched.
+
 
