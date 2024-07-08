@@ -175,7 +175,8 @@ The following routes are protected and require authentication:
 
 ## Thoughts, possible roadmap
 
-### Datastores 
+### Datastores
+
 We're currently only using DynamoDB for all operations.
 In the future ElasticSearch/OpenSearch can be used for filtering based on preferences, distance, attractiveness.
 ElasticSearch has built in geospatial features so it'd be more efficient that making these on the dynamodb + app side.
@@ -183,6 +184,7 @@ ElasticSearch has built in geospatial features so it'd be more efficient that ma
 Redis or SQS can be used to batch swipe writes to DDB.
 
 ### Events
+
 Currently the system is coupled and fully synchronous. EDA can be implemented to decouple the components.
 Eg. when a user receives a like, then a listener on the ddb stream updates the attractiveness on the profile. Via the same event another handler can check if there's been a match and emit for another handler to pickup and via websockets notify both users that they've been matched.
 
