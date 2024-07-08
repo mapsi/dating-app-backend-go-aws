@@ -65,10 +65,16 @@ curl -X POST -H "Content-Type: application/json" -d '{"email":"user@example.com"
 
 To use the discover endpoint, send an authenticated GET request to `/discover`. The endpoint will return a list of potential matches, excluding the current user and users that have already been swiped on.
 
+You can include the following query parameters to filter the results:
+
+- `minAge`: Minimum age of users to discover (inclusive)
+- `maxAge`: Maximum age of users to discover (inclusive)
+- `gender`: Gender of users to discover ("Male" or "Female")
+
 Example:
 
 ```
-curl -X GET -H "Authorization: Bearer <your_jwt_token>" http://localhost:3000/discover
+curl -X GET -H "Authorization: Bearer <your_jwt_token>" http://localhost:3000/discover\?minAge\=20
 ```
 
 Response format:
@@ -79,13 +85,13 @@ Response format:
     {
       "id": "01F8Z6ARNVT4VQ3HTBD7BTHVF9",
       "name": "John Doe",
-      "gender": "male",
+      "gender": "Male",
       "age": 30
     },
     {
       "id": "01F8Z6ARNVT4VQ3HTBD7BTHVG9",
       "name": "Jane Smith",
-      "gender": "female",
+      "gender": "Female",
       "age": 28
     },
     ...

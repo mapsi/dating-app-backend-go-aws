@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"strconv"
 
 	appModel "dating-app-backend/internal/model"
 	"errors"
@@ -65,8 +66,8 @@ func (db *DynamoDB) GetUserByEmail(ctx context.Context, email string) (*appModel
 	return &user, nil
 }
 
-func (db *DynamoDB) DiscoverUsers(ctx context.Context, currentUserID string, limit int32) ([]appModel.UserPublicData, error) {
-	db.logger.Info("Discovering users", "currentUserID", currentUserID, "limit", limit)
+func (db *DynamoDB) DiscoverUsers(ctx context.Context, currentUserID string, limit int32, minAge, maxAge int, gender string) ([]appModel.UserPublicData, error) {
+	db.logger.Info("Discovering users", "currentUserID", currentUserID, "limit", limit, "minAge", minAge, "maxAge", maxAge, "gender", gender)
 
 	// Get all swipes by the current user
 	swipedUsers, err := db.getSwipedUsers(ctx, currentUserID)
@@ -85,6 +86,21 @@ func (db *DynamoDB) DiscoverUsers(ctx context.Context, currentUserID string, lim
 	for i, swipedID := range swipedUsers {
 		filterExp += fmt.Sprintf(" AND ID <> :swipedId%d", i)
 		expAttrValues[fmt.Sprintf(":swipedId%d", i)] = &types.AttributeValueMemberS{Value: swipedID}
+	}
+
+	if minAge > 0 {
+		filterExp += " AND Age >= :minAge"
+		expAttrValues[":minAge"] = &types.AttributeValueMemberN{Value: strconv.Itoa(minAge)}
+	}
+
+	if maxAge > 0 {
+		filterExp += " AND Age <= :maxAge"
+		expAttrValues[":maxAge"] = &types.AttributeValueMemberN{Value: strconv.Itoa(maxAge)}
+	}
+
+	if gender != "" {
+		filterExp += " AND Gender = :gender"
+		expAttrValues[":gender"] = &types.AttributeValueMemberS{Value: gender}
 	}
 
 	// Perform the scan operation

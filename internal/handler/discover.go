@@ -4,6 +4,7 @@ import (
 	"dating-app-backend/internal/auth"
 	"dating-app-backend/internal/logger"
 	"dating-app-backend/internal/storage"
+	"strconv"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -24,11 +25,15 @@ func (h *DiscoverHandler) DiscoverUsers(ctx *fiber.Ctx) error {
 		return ctx.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"error": "Invalid token"})
 	}
 
-	h.logger.Info("Discovering users", "userID", userID)
+	minAge, _ := strconv.Atoi(ctx.Query("minAge", "0"))
+	maxAge, _ := strconv.Atoi(ctx.Query("maxAge", "0"))
+	gender := ctx.Query("gender", "")
+
+	h.logger.Info("Discovering users", "userID", userID, "minAge", minAge, "maxAge", maxAge, "gender", gender)
 	// TODO: Implement pagination
-	discoveredUsers, err := h.storage.DiscoverUsers(ctx.Context(), userID, 10) // Limit to 10 users
+	discoveredUsers, err := h.storage.DiscoverUsers(ctx.Context(), userID, 10, minAge, maxAge, gender)
 	if err != nil {
-		h.logger.Error("Failed to discover users", "error", err)
+		h.logger.Error("Failed to discover users", "error", err, "userID", userID)
 		return ctx.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Failed to discover users"})
 	}
 
